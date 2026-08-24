@@ -24,7 +24,7 @@ WILD_POOL = {
     "11-20": [{"name": "比比鳥", "move": "烈暴風"}, {"name": "阿柏怪", "move": "溶解液"}, {"name": "巴大蝶", "move": "念力"}, {"name": "大嘴蝠", "move": "翅膀攻擊"}, {"name": "臭臭花", "move": "超級吸取"}, {"name": "派拉斯", "move": "吸血"}, {"name": "喵喵", "move": "聚寶功"}, {"name": "可達鴨", "move": "水槍"}, {"name": "蚊香蝌蚪", "move": "泡沫"}, {"name": "凱西", "move": "折彎湯匙"}],
     "21-30": [{"name": "三地鼠", "move": "泥巴炸彈"}, {"name": "風速狗", "move": "火焰輪"}, {"name": "蚊香君", "move": "連環巴掌"}, {"name": "勇基拉", "move": "幻象光線"}, {"name": "豪力", "move": "空手劈"}, {"name": "隆隆石", "move": "滾石"}, {"name": "小火馬", "move": "火焰漩渦"}, {"name": "呆呆獸", "move": "水之波動"}, {"name": "大磁怪", "move": "電擊波"}, {"name": "大舌貝", "move": "冰凍之風"}],
     "31-40": [{"name": "大鬼斯通", "move": "暗影拳"}, {"name": "火爆獸", "move": "噴射火焰"}, {"name": "水箭龜", "move": "水炮"}, {"name": "妙蛙花", "move": "藤鞭"}, {"name": "噴火龍", "move": "噴射火焰"}, {"name": "飛腿郎", "move": "飛膝踢"}, {"name": "快拳郎", "move": "音速拳"}, {"name": "雙彈瓦斯", "move": "污泥炸彈"}, {"name": "巨鉗蟹", "move": "蟹鉗錘"}, {"name": "椰蛋樹", "move": "種子炸彈"}],
-    "41-50": [{"name": "化石翼龍", "move": "原始力量"}, {"name": "卡比獸", "move": "終極衝擊"}, {"name": "急凍鳥", "move": "冰凍光束"}, {"name": "閃電鳥", "move": "打雷"}, {"name": "火焰鳥", "move": "熱風"}, {"name": "九尾", "move": "大字爆炎"}, {"name": "刺甲貝", "move": "冰錐"}, {"name": "鐮刀盔", "move": "水流裂破"}, {"name": "多邊獸", "move": "三角攻擊"}, {"name": "哈克龍", "move": "龍之波動"}]
+    "41-50": [{"name": "化石翼龍", "move": "原始力量"}, {"name": "卡比獸", "move": "終極衝擊"}, {"name": "急凍鳥", "move": "冰凍光束"}, {"name": "閃電鳥", "move": "打雷"}, {"name": "火焰鳥", "move": "熱風"}, {"name": "九尾", "move": "大字爆炎"}, {"name": "刺甲貝", "move": "冰錐"}, {"name": "鐮刀盔", "move": "水流裂破"}, {"name": "多邊獸", "move": "三角攻擊"}, {"name": "哈克龍", "move": "龍之波動"} ]
 }
 
 BASE_SKILLS = {"🔥 悔念劍": 40, "👻 暗影衝擊": 30, "⚡ 蓄能焰襲": 20, "🔮 精神利刃": 25}
@@ -133,7 +133,6 @@ if not st.session_state.skills_generated or "current_round_answers" not in st.se
 st.set_page_config(page_title="蒼炎刃鬼 - 單字聯盟挑戰", layout="wide")
 st.title("🔥 蒼炎刃鬼 - 寶可夢單字聯盟大挑戰 🔥")
 
-# ✨ 修正點 1：傳入參數 2，明確將網頁分為兩大欄
 col1, col2 = st.columns(2)
 
 with col1: # 左側戰鬥面板
@@ -142,7 +141,6 @@ with col1: # 左側戰鬥面板
     else:
         st.subheader("🌲 【野生特訓區】草叢深處")
         
-    # ✨ 修正點 2：血量狀態欄也加上參數 2 區分
     b_col1, b_col2 = st.columns(2)
     with b_col1:
         st.error(f"😈 敵方: {st.session_state.current_enemy['name']} (Lv.{st.session_state.current_enemy['level']})")
@@ -165,16 +163,14 @@ with col1: # 左側戰鬥面板
     st.write("---")
     user_input = st.text_input("請輸入招式對應的正確『英文單字』並按下發動:", key="battle_input").strip().lower()
     
-            # === 1. 檢查玩家輸入的英文單字 ===
-        for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
-            if user_input == word.lower():
-                matched_skill = s_name
-                damage_dealt = dmg
-                break
-                
-        boss = st.session_state.current_enemy
+    if st.button("💥 發動招式攻擊", use_container_width=True):
+        if not st.session_state.current_round_answers:
+            st.stop()
+            
+        matched_skill = None
+        damage_dealt = 0
         
-        # === 2. 建立網頁版強制彈出式視窗的對話框函式 ===
+        # === 1. 建立網頁版強制彈出式視窗的對話框函式 ===
         @st.dialog("⚔️ 戰鬥回合結果")
         def show_battle_dialog(is_success, skill, dmg, b_name, b_move):
             if is_success:
@@ -185,19 +181,22 @@ with col1: # 左側戰鬥面板
                 st.error(f"❌ **拼字錯誤或未命中...**")
                 st.markdown(f"### 野生 **{b_name}** 乘虛而入使用了【**{b_move}**】！")
                 st.markdown(f"💥 蒼炎刃鬼受到了 `{dmg}` 點巨額傷害！")
-            
-            # 玩家點擊確定按鈕後才會繼續刷新遊戲
             if st.button("確定 (Next Turn)", use_container_width=True):
                 st.rerun()
 
+        # === 2. 檢查玩家輸入的英文單字 ===
+        for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
+            if user_input == word.lower():
+                matched_skill = s_name
+                damage_dealt = dmg
+                break
+                
+        boss = st.session_state.current_enemy
+        
         # === 3. 根據是否答對，計算扣血、更新日誌並觸發彈出視窗 ===
         if matched_skill:
-            # ✨ 修正點 1：精準將扣血數據同步寫入 session_state，徹底解決不扣血 Bug
             st.session_state.enemy_hp -= damage_dealt
-            st.session_state.current_enemy["hp_current"] = st.session_state.enemy_hp 
             st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼使出【{matched_skill}】！對 {boss['name']} 造成 {damage_dealt} 點傷害！"
-            
-            # ✨ 新增功能：觸發答對的彈出視窗
             show_battle_dialog(True, matched_skill, damage_dealt, boss['name'], boss['move'])
         else:
             if not st.session_state.is_wild_mode:
@@ -206,8 +205,6 @@ with col1: # 左側戰鬥面板
                 boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
             st.session_state.player_hp -= boss_damage
             st.session_state.battle_log = f"❌ 拼字錯誤！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
-            
-            # ✨ 新增功能：觸發答錯被揍的彈出視窗
             show_battle_dialog(False, "", boss_damage, boss['name'], boss['move'])
 
         # === 4. 勝負與經驗值結算判定 ===
@@ -215,7 +212,6 @@ with col1: # 左側戰鬥面板
             exp = boss["exp_reward"]
             is_up, gap = check_level_up_st(exp)
             
-            # 獲勝提示對話框
             @st.dialog("🎉 戰鬥大勝利！")
             def show_win_dialog(b_name, xp, up, lvl):
                 st.balloons()
@@ -223,7 +219,7 @@ with col1: # 左側戰鬥面板
                 st.write(f"📈 獲得了 `{xp}` 點經驗值！")
                 if up:
                     st.warning(f"🔥 **等級突破！** 蒼炎刃鬼提升了 {lvl} 級！目前等級：Lv.{st.session_state.player_level}")
-                if st.button("前進下一關 (Confirm)", use_container_width=True):
+                if st.button("前前下一關 (Confirm)", use_container_width=True):
                     st.rerun()
 
             if not st.session_state.is_wild_mode:
@@ -236,7 +232,6 @@ with col1: # 左側戰鬥面板
             save_game_st()
             show_win_dialog(boss['name'], exp, is_up, gap)
             
-            # 刷新下一場敵人
             if not st.session_state.is_wild_mode:
                 st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
             st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
@@ -245,7 +240,7 @@ with col1: # 左側戰鬥面板
         elif st.session_state.player_hp <= 0:
             @st.dialog("💀 挑戰失敗")
             def show_lose_dialog():
-                st.error("蒼炎刃鬼失去戰鬥能力... 自動送回喬伊小姐的醫療中心補滿血。")
+                st.error("蒼炎刃鬼失去戰鬥能力... 自動送回喬意小姐的醫療中心補滿血。")
                 if st.button("重新整備出發", use_container_width=True):
                     st.rerun()
 
