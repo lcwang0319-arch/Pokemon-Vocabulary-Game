@@ -22,7 +22,7 @@ MAIN_STAGES = [
 WILD_POOL = {
     "1-10": [{"name": "綠毛蟲", "move": "撞擊"}, {"name": "小拉達", "move": "電光一閃"}, {"name": "獨角蟲", "move": "毒針"}, {"name": "波波", "move": "起風"}, {"name": "阿柏蛇", "move": "緊束"}, {"name": "皮卡丘", "move": "電擊"}, {"name": "穿山鼠", "move": "抓"}, {"name": "尼多蘭", "move": "二連踢"}, {"name": "胖丁", "move": "連環巴掌"}, {"name": "地鼠", "move": "潑沙"}],
     "11-20": [{"name": "比比鳥", "move": "烈暴風"}, {"name": "阿柏怪", "move": "溶解液"}, {"name": "巴大蝶", "move": "念力"}, {"name": "大嘴蝠", "move": "翅膀攻擊"}, {"name": "臭臭花", "move": "超級吸取"}, {"name": "派拉斯", "move": "吸血"}, {"name": "喵喵", "move": "聚寶功"}, {"name": "可達鴨", "move": "水槍"}, {"name": "蚊香蝌蚪", "move": "泡沫"}, {"name": "凱西", "move": "折彎湯匙"}],
-    "21-30": [{"name": "三地鼠", "move": "泥巴炸彈"}, {"name": "風速狗", "move": "火焰輪"}, {"name": "蚊香君", "move": "連環巴掌"}, {"name": "勇基拉", "move": "幻象光線"}, {"name": "豪力", "move": "空手劈"}, {"name": "隆隆石", "move": "滾石"}, {"name": "小火馬", "move": "火焰漩渦"}, {"name": "呆牢獸", "move": "水之波動"}, {"name": "大磁怪", "move": "電擊波"}, {"name": "大舌貝", "move": "冰凍之風"}],
+    "21-30": [{"name": "三地鼠", "move": "泥巴炸彈"}, {"name": "風速狗", "move": "火焰輪"}, {"name": "蚊香君", "move": "連環巴掌"}, {"name": "勇基拉", "move": "幻象光線"}, {"name": "豪力", "move": "空手劈"}, {"name": "隆隆石", "move": "滾石"}, {"name": "小火馬", "move": "火焰漩渦"}, {"name": "呆呆獸", "move": "水之波動"}, {"name": "大磁怪", "move": "電擊波"}, {"name": "大舌貝", "move": "冰凍之風"}],
     "31-40": [{"name": "大鬼斯通", "move": "暗影拳"}, {"name": "火爆獸", "move": "噴射火焰"}, {"name": "水箭龜", "move": "水炮"}, {"name": "妙蛙花", "move": "藤鞭"}, {"name": "噴火龍", "move": "噴射火焰"}, {"name": "飛腿郎", "move": "飛膝踢"}, {"name": "快拳郎", "move": "音速拳"}, {"name": "雙彈瓦斯", "move": "污泥炸彈"}, {"name": "巨鉗蟹", "move": "蟹鉗錘"}, {"name": "椰蛋樹", "move": "種子炸彈"}],
     "41-50": [{"name": "化石翼龍", "move": "原始力量"}, {"name": "卡比獸", "move": "終極衝擊"}, {"name": "急凍鳥", "move": "冰凍光束"}, {"name": "閃電鳥", "move": "打雷"}, {"name": "火焰鳥", "move": "熱風"}, {"name": "九尾", "move": "大字爆炎"}, {"name": "刺甲貝", "move": "冰錐"}, {"name": "鐮刀盔", "move": "水流裂破"}, {"name": "多邊獸", "move": "三角攻擊"}, {"name": "哈克龍", "move": "龍之波動"}]
 }
@@ -54,7 +54,7 @@ for week in range(1, 41):
     WORD_WEEKLY_BANK[f"第 {week} 週"] = []
 WORD_WEEKLY_BANK["第 13 週"] = [(item["en"], item["zh"]) for item in WEEK_13_INPUT]
 
-# ==================== 2. 存檔與狀態管理 (使用 Streamlit session_state) ====================
+# ==================== 2. 存檔與狀態管理 ====================
 SAVE_FILE = "pokemon_save.txt"
 
 def calculate_max_hp(lvl):
@@ -63,7 +63,6 @@ def calculate_max_hp(lvl):
 
 # 初始化狀態
 if "player_level" not in st.session_state:
-    # 嘗試讀檔
     if os.path.exists(SAVE_FILE):
         try:
             with open(SAVE_FILE, "r", encoding="utf-8") as f:
@@ -75,7 +74,6 @@ if "player_level" not in st.session_state:
         except:
             pass
             
-    # 若無存檔則設預設值
     if "player_level" not in st.session_state:
         st.session_state.player_level = 5
         st.session_state.player_current_exp = 0
@@ -87,8 +85,7 @@ if "player_level" not in st.session_state:
     st.session_state.is_wild_mode = False
     st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
     st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
-    st.session_state.battle_log = "進入戰鬥！請輸入招式中文發動攻擊！"
-    st.session_state.log_color = "black"
+    st.session_state.battle_log = "進入戰鬥！請看中文，並在下方輸入正確的『英文單字』！"
     st.session_state.skills_generated = False
 
 def save_game_st():
@@ -129,24 +126,23 @@ def generate_round_skills():
         st.session_state.current_round_answers[skill_name] = (word, ans, base_dmg + bonus)
     st.session_state.skills_generated = True
 
-# 每輪自動生成技能題目
 if not st.session_state.skills_generated or "current_round_answers" not in st.session_state:
     generate_round_skills()
+
 # ==================== 3. Streamlit 網頁佈局 ====================
 st.set_page_config(page_title="蒼炎刃鬼 - 單字聯盟挑戰", layout="wide")
 st.title("🔥 蒼炎刃鬼 - 寶可夢單字聯盟大挑戰 🔥")
 
-# 分左右兩欄
-col1, col2 = st.columns()
+# ✨ 修正點 1：傳入參數 2，明確將網頁分為兩大欄
+col1, col2 = st.columns(2)
 
 with col1: # 左側戰鬥面板
-    # 關卡與對手資訊
     if not st.session_state.is_wild_mode:
         st.subheader(f"🏆 【主線故事】第 {st.session_state.current_stage + 1} / 13 關")
     else:
         st.subheader("🌲 【野生特訓區】草叢深處")
         
-    # 戰鬥狀態卡片
+    # ✨ 修正點 2：血量狀態欄也加上參數 2 區分
     b_col1, b_col2 = st.columns(2)
     with b_col1:
         st.error(f"😈 敵方: {st.session_state.current_enemy['name']} (Lv.{st.session_state.current_enemy['level']})")
@@ -157,21 +153,16 @@ with col1: # 左側戰鬥面板
         st.progress(max(0.0, min(1.0, st.session_state.player_hp / st.session_state.player_max_hp)))
         st.write(f"血量: **{st.session_state.player_hp}** / {st.session_state.player_max_hp} | 累積 EXP: **{st.session_state.player_current_exp}**")
 
-    # 戰鬥日誌
     st.info(f"📢 戰鬥日誌: {st.session_state.battle_log}")
 
-    # ✨ 畫面顯示優化：顯示中文，考玩家英文
     st.write("### ⚔️ 可發動技能與綁定單字提示")
     if not st.session_state.current_round_answers:
         st.warning(f"⚠️ {st.session_state.selected_week} 尚未錄入真實單字！請從右側切換至第 13 週。")
     else:
         for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
-            # word 是英文，ans 是中文。現在畫面上顯示中文提示（ans）
             st.markdown(f"**{s_name}** (威力: {dmg}) ➔ 中文意思: <span style='color:#e65100; font-size:18px; font-weight:bold;'>【 {ans} 】</span>", unsafe_allow_html=True)
 
-    # 玩家輸入與攻擊
     st.write("---")
-    # ✨ 提示文字修改為請玩家輸入英文單字，並自動將輸入轉為小寫、去除空格
     user_input = st.text_input("請輸入招式對應的正確『英文單字』並按下發動:", key="battle_input").strip().lower()
     
     if st.button("💥 發動招式攻擊", use_container_width=True):
@@ -181,28 +172,10 @@ with col1: # 左側戰鬥面板
         matched_skill = None
         damage_dealt = 0
         
-        # === 💥 核心改動：比對玩家輸入的英文 (word) 是否正確 ===
         for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
-            if user_input == word.lower(): # 將題目英文也轉小寫進行比對
+            if user_input == word.lower():
                 matched_skill = s_name
-                damage_dealt = dmg
-                break
-                
-        boss = st.session_state.current_enemy
-        
-        # === 計算扣血傷害與戰鬥 Log 更新 ===
-        if matched_skill:
-            st.session_state.enemy_hp -= damage_dealt
-            st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼拼出英文【{user_input}】成功使出【{matched_skill}】！對 {boss['name']} 造成 {damage_dealt} 點傷害！"
-        else:
-            if not st.session_state.is_wild_mode:
-                boss_damage = int(boss["level"] * 2.5) + 40 + random.randint(-4, 4)
-            else:
-                boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
-            st.session_state.player_hp -= boss_damage
-            st.session_state.battle_log = f"❌ 拼字錯誤或未命中！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
-
-        # === 勝負與經驗值結算判定 ===
+        # === 3. 勝負與經驗值結算判定 ===
         if st.session_state.enemy_hp <= 0:
             exp = boss["exp_reward"]
             is_up, gap = check_level_up_st(exp)
@@ -244,7 +217,6 @@ with col1: # 左側戰鬥面板
 with col2: # ==================== 右側控制面板 ====================
     st.header("🗺️ 進度與野外特訓區")
     
-    # 選擇週數
     week_list = [f"第 {w} 週" for w in range(1, 41)]
     idx_saved = week_list.index(st.session_state.selected_week) if st.session_state.selected_week in week_list else 12
     chosen_week = st.selectbox("📚 選擇本週背誦進度", week_list, index=idx_saved)
@@ -258,7 +230,7 @@ with col2: # ==================== 右側控制面板 ====================
     st.write("---")
     st.write("🌲 點擊進入野生草叢練功")
     
-    # 五個野外特訓區按鈕
+    # 五個野外特訓區按鈕 (已修正新版參數與乘號)
     if st.button("🌿 1~10級 草叢特訓"):
         st.session_state.is_wild_mode = True
         lvl = random.randint(1, 10)
