@@ -165,43 +165,90 @@ with col1: # 左側戰鬥面板
     st.write("---")
     user_input = st.text_input("請輸入招式對應的正確『英文單字』並按下發動:", key="battle_input").strip().lower()
     
-    if st.button("💥 發動招式攻擊", use_container_width=True):
-        if not st.session_state.current_round_answers:
-            st.stop()
-            
-        matched_skill = None
-        damage_dealt = 0
-        
+            # === 1. 檢查玩家輸入的英文單字 ===
         for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
             if user_input == word.lower():
                 matched_skill = s_name
-        # === 3. 勝負與經驗值結算判定 ===
+                damage_dealt = dmg
+                break
+                
+        boss = st.session_state.current_enemy
+        
+        # === 2. 建立網頁版強制彈出式視窗的對話框函式 ===
+        @st.dialog("⚔️ 戰鬥回合結果")
+        def show_battle_dialog(is_success, skill, dmg, b_name, b_move):
+            if is_success:
+                st.success(f"✨ **拼字完全正確！**")
+                st.markdown(f"### 蒼炎刃鬼使出了【**{skill}**】！")
+                st.markdown(f"🎯 成功對野生 **{b_name}** 造成了 `{dmg}` 點重創傷害！")
+            else:
+                st.error(f"❌ **拼字錯誤或未命中...**")
+                st.markdown(f"### 野生 **{b_name}** 乘虛而入使用了【**{b_move}**】！")
+                st.markdown(f"💥 蒼炎刃鬼受到了 `{dmg}` 點巨額傷害！")
+            
+            # 玩家點擊確定按鈕後才會繼續刷新遊戲
+            if st.button("確定 (Next Turn)", use_container_width=True):
+                st.rerun()
+
+        # === 3. 根據是否答對，計算扣血、更新日誌並觸發彈出視窗 ===
+        if matched_skill:
+            # ✨ 修正點 1：精準將扣血數據同步寫入 session_state，徹底解決不扣血 Bug
+            st.session_state.enemy_hp -= damage_dealt
+            st.session_state.current_enemy["hp_current"] = st.session_state.enemy_hp 
+            st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼使出【{matched_skill}】！對 {boss['name']} 造成 {damage_dealt} 點傷害！"
+            
+            # ✨ 新增功能：觸發答對的彈出視窗
+            show_battle_dialog(True, matched_skill, damage_dealt, boss['name'], boss['move'])
+        else:
+            if not st.session_state.is_wild_mode:
+                boss_damage = int(boss["level"] * 2.5) + 40 + random.randint(-4, 4)
+            else:
+                boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
+            st.session_state.player_hp -= boss_damage
+            st.session_state.battle_log = f"❌ 拼字錯誤！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
+            
+            # ✨ 新增功能：觸發答錯被揍的彈出視窗
+            show_battle_dialog(False, "", boss_damage, boss['name'], boss['move'])
+
+        # === 4. 勝負與經驗值結算判定 ===
         if st.session_state.enemy_hp <= 0:
             exp = boss["exp_reward"]
             is_up, gap = check_level_up_st(exp)
-            st.session_state.battle_log = f"🎉 成功擊敗 {boss['name']}！獲得 {exp} 點經驗值！"
-            if is_up:
-                st.session_state.battle_log += f" 🔥 等級提升 {gap} 級！目前為 Lv.{st.session_state.player_level}！"
-                
+            
+            # 獲勝提示對話框
+            @st.dialog("🎉 戰鬥大勝利！")
+            def show_win_dialog(b_name, xp, up, lvl):
+                st.balloons()
+                st.success(f"🏆 成功擊敗了野生 {b_name}！")
+                st.write(f"📈 獲得了 `{xp}` 點經驗值！")
+                if up:
+                    st.warning(f"🔥 **等級突破！** 蒼炎刃鬼提升了 {lvl} 級！目前等級：Lv.{st.session_state.player_level}")
+                if st.button("前進下一關 (Confirm)", use_container_width=True):
+                    st.rerun()
+
             if not st.session_state.is_wild_mode:
                 st.session_state.current_stage += 1
                 if st.session_state.current_stage >= len(MAIN_STAGES):
-                    st.balloons()
-                    st.success("🎉 恭喜你！成功擊敗超夢，通關全系列！進度已重置。")
                     st.session_state.current_stage = 0
                     st.session_state.player_level = 5
                     st.session_state.player_current_exp = 0
             
             save_game_st()
+            show_win_dialog(boss['name'], exp, is_up, gap)
             
+            # 刷新下一場敵人
             if not st.session_state.is_wild_mode:
                 st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
             st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
             generate_round_skills()
-            st.rerun()
             
         elif st.session_state.player_hp <= 0:
-            st.session_state.battle_log = "💀 蒼炎刃鬼失去戰鬥能力... 自動回醫療中心補滿血。"
+            @st.dialog("💀 挑戰失敗")
+            def show_lose_dialog():
+                st.error("蒼炎刃鬼失去戰鬥能力... 自動送回喬伊小姐的醫療中心補滿血。")
+                if st.button("重新整備出發", use_container_width=True):
+                    st.rerun()
+
             st.session_state.player_hp = st.session_state.player_max_hp
             if not st.session_state.is_wild_mode:
                 st.session_state.current_stage = max(0, st.session_state.current_stage - 1)
@@ -209,10 +256,9 @@ with col1: # 左側戰鬥面板
             st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
             save_game_st()
             generate_round_skills()
-            st.rerun()
+            show_lose_dialog()
         else:
             generate_round_skills()
-            st.rerun()
 
 with col2: # ==================== 右側控制面板 ====================
     st.header("🗺️ 進度與野外特訓區")
@@ -230,7 +276,6 @@ with col2: # ==================== 右側控制面板 ====================
     st.write("---")
     st.write("🌲 點擊進入野生草叢練功")
     
-    # 五個野外特訓區按鈕 (已修正新版參數與乘號)
     if st.button("🌿 1~10級 草叢特訓"):
         st.session_state.is_wild_mode = True
         lvl = random.randint(1, 10)
