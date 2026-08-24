@@ -132,13 +132,12 @@ def generate_round_skills():
 # 每輪自動生成技能題目
 if not st.session_state.skills_generated or "current_round_answers" not in st.session_state:
     generate_round_skills()
-
 # ==================== 3. Streamlit 網頁佈局 ====================
 st.set_page_config(page_title="蒼炎刃鬼 - 單字聯盟挑戰", layout="wide")
 st.title("🔥 蒼炎刃鬼 - 寶可夢單字聯盟大挑戰 🔥")
 
 # 分左右兩欄
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns()
 
 with col1: # 左側戰鬥面板
     # 關卡與對手資訊
@@ -161,17 +160,19 @@ with col1: # 左側戰鬥面板
     # 戰鬥日誌
     st.info(f"📢 戰鬥日誌: {st.session_state.battle_log}")
 
-    # 顯示技能招式表
-    st.write("### ⚔️ 可發動技能與綁定單字")
+    # ✨ 畫面顯示優化：顯示中文，考玩家英文
+    st.write("### ⚔️ 可發動技能與綁定單字提示")
     if not st.session_state.current_round_answers:
         st.warning(f"⚠️ {st.session_state.selected_week} 尚未錄入真實單字！請從右側切換至第 13 週。")
     else:
         for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
-            st.markdown(f"**{s_name}** (威力: {dmg}) ➔ 英文單字: <span style='color:blue; font-size:18px; font-weight:bold;'>{word}</span>", unsafe_allow_html=True)
+            # word 是英文，ans 是中文。現在畫面上顯示中文提示（ans）
+            st.markdown(f"**{s_name}** (威力: {dmg}) ➔ 中文意思: <span style='color:#e65100; font-size:18px; font-weight:bold;'>【 {ans} 】</span>", unsafe_allow_html=True)
 
     # 玩家輸入與攻擊
     st.write("---")
-    user_input = st.text_input("請輸入招式對應的正確『中文意思』並按下發動:", key="battle_input").strip()
+    # ✨ 提示文字修改為請玩家輸入英文單字，並自動將輸入轉為小寫、去除空格
+    user_input = st.text_input("請輸入招式對應的正確『英文單字』並按下發動:", key="battle_input").strip().lower()
     
     if st.button("💥 發動招式攻擊", use_container_width=True):
         if not st.session_state.current_round_answers:
@@ -179,28 +180,29 @@ with col1: # 左側戰鬥面板
             
         matched_skill = None
         damage_dealt = 0
-        # === 1. 檢查玩家輸入的中文答案 ===
+        
+        # === 💥 核心改動：比對玩家輸入的英文 (word) 是否正確 ===
         for s_name, (word, ans, dmg) in st.session_state.current_round_answers.items():
-            if user_input == ans:
+            if user_input == word.lower(): # 將題目英文也轉小寫進行比對
                 matched_skill = s_name
                 damage_dealt = dmg
                 break
                 
         boss = st.session_state.current_enemy
         
-        # === 2. 計算扣血傷害與戰鬥 Log 更新 ===
+        # === 計算扣血傷害與戰鬥 Log 更新 ===
         if matched_skill:
             st.session_state.enemy_hp -= damage_dealt
-            st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼使出【{matched_skill}】！對 {boss['name']} 造成 {damage_dealt} 點傷害！"
+            st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼拼出英文【{user_input}】成功使出【{matched_skill}】！對 {boss['name']} 造成 {damage_dealt} 點傷害！"
         else:
             if not st.session_state.is_wild_mode:
                 boss_damage = int(boss["level"] * 2.5) + 40 + random.randint(-4, 4)
             else:
                 boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
             st.session_state.player_hp -= boss_damage
-            st.session_state.battle_log = f"❌ 答錯了！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
+            st.session_state.battle_log = f"❌ 拼字錯誤或未命中！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
 
-        # === 3. 勝負與經驗值結算判定 ===
+        # === 勝負與經驗值結算判定 ===
         if st.session_state.enemy_hp <= 0:
             exp = boss["exp_reward"]
             is_up, gap = check_level_up_st(exp)
@@ -256,7 +258,7 @@ with col2: # ==================== 右側控制面板 ====================
     st.write("---")
     st.write("🌲 點擊進入野生草叢練功")
     
-    # 五個野外特訓區按鈕 (修正了原始碼中的 lvl*3 乘號缺陷)
+    # 五個野外特訓區按鈕
     if st.button("🌿 1~10級 草叢特訓"):
         st.session_state.is_wild_mode = True
         lvl = random.randint(1, 10)
@@ -305,7 +307,7 @@ with col2: # ==================== 右側控制面板 ====================
     st.write("---")
     if st.button("🏆 回到主線 13 關挑戰", use_container_width=True):
         st.session_state.is_wild_mode = False
-        st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_state].copy()
+        st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
         st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
         generate_round_skills()
         st.rerun()
