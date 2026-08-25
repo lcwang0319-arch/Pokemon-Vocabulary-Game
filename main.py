@@ -305,6 +305,7 @@ with col1:
                 generate_round_skills()
 
     with action_col2:
+        # 野生寶可夢捕捉功能
         if st.button("🔴 投擲精靈球捕捉", use_container_width=True):
             if not st.session_state.is_wild_mode:
                 st.warning("⚠️ 只能在野生寶可夢捕捉區進行捕捉，故事關卡的 NPC 頭目是不能被收服的！")
@@ -330,41 +331,6 @@ with col1:
                             if catch_input == word.lower():
                                 if random.random() <= rate:
                                     st.balloons()
-                                    st.success(f"✨ 嗶、嗶、嗶...登登！成功收服 **{b_name}**！已放入隊伍背包。")
-                                    if b_name not in st.session_state.caught_pokemon:
-                                        st.session_state.caught_pokemon.append(b_name)
-                                    st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
-                                else:
-                                    st.error(f"💨 哎呀！{b_name} 從精靈球裡掙脫逃跑了！(捕捉機率：{int(rate*100)}%)")
-                            else:
-                                st.error(f"❌ 拼字錯誤！收服失敗。正確答案是【{word}】")
-                            save_game_st()
-                            generate_round_skills()
-                            if st.button("繼續特訓 (Next)", use_container_width=True):
-                                st.rerun()
-                    show_catch_dialog(catch_q_word, catch_q_ans, catch_rate, boss["name"])
-
-with col2: # ==================== 右側控制面板 ====================
-    st.header("🗺️ 進度與野外特訓區")
-    
-    st.markdown(f"🎒 **玩家背包狀態**")
-    st.markdown(f"🔴 剩餘精靈球數量： `{st.session_state.pokeballs}` 顆 | 🎖️ 當前首發隊友： **{st.session_state.active_partner}**")
-    
-    with st.expander(f"📜 已收服的寶可夢圖鑑管理選單"):
-        if st.session_state.caught_pokemon:
-            st.write("點選下方你想派上場的夥伴寶可夢：")
-            
-            if st.button("❌ 召回夥伴 (單獨作戰)", key="remove_partner_btn"):
-                st.session_state.active_partner = "無"
-                save_game_st()
-                st.rerun()
-                
-            for idx, p_name in enumerate(st.session_state.caught_pokemon):
-                if st.button(f"🎖️ 派遣【{p_name}】出場戰鬥", key=f"partner_{idx}"):
-                    st.session_state.active_partner = p_name
-                    save_game_st()
-                    st.rerun()
-        else:
                                     st.success(f"✨ 嗶、嗶、嗶...登登！成功收服 **{b_name}**！已放入隊伍背包。")
                                     if b_name not in st.session_state.caught_pokemon:
                                         st.session_state.caught_pokemon.append(b_name)
