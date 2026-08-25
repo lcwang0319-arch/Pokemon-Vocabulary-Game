@@ -3,6 +3,7 @@ import random
 import os
 
 # ==================== 1. 遊戲核心基礎資料設定 ====================
+# 13 關強大的聯盟 NPC 訓練家故事關卡
 MAIN_STAGES = [
     {"name": "小隊長大岩蛇", "level": 12, "hp": 80, "move": "落石", "exp_reward": 20},     
     {"name": "小隊長寶石海星", "level": 18, "hp": 95, "move": "水炮", "exp_reward": 40},   
@@ -19,6 +20,7 @@ MAIN_STAGES = [
     {"name": "火箭隊總帥超夢", "level": 70, "hp": 350, "move": "精神擊破", "exp_reward": 3000}  
 ]
 
+# 野生特訓區 5 大草叢（共 50 隻可捕捉野生寶可夢池）
 WILD_POOL = {
     "1-10": [{"name": "綠毛蟲", "move": "撞擊"}, {"name": "小拉達", "move": "電光一閃"}, {"name": "獨角蟲", "move": "毒針"}, {"name": "波波", "move": "起風"}, {"name": "阿柏蛇", "move": "緊束"}, {"name": "皮卡丘", "move": "電擊"}, {"name": "穿山鼠", "move": "抓"}, {"name": "尼多蘭", "move": "二連踢"}, {"name": "胖丁", "move": "連環巴掌"}, {"name": "地鼠", "move": "潑沙"}],
     "11-20": [{"name": "比比鳥", "move": "烈暴風"}, {"name": "阿柏怪", "move": "溶解液"}, {"name": "巴大蝶", "move": "念力"}, {"name": "大嘴蝠", "move": "翅膀攻擊"}, {"name": "臭臭花", "move": "超級吸取"}, {"name": "派拉斯", "move": "吸血"}, {"name": "喵喵", "move": "聚寶功"}, {"name": "可達鴨", "move": "水槍"}, {"name": "蚊香蝌蚪", "move": "泡沫"}, {"name": "凱西", "move": "折彎湯匙"}],
@@ -93,7 +95,7 @@ if "player_level" not in st.session_state:
     st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
     st.session_state.battle_log = "進入戰鬥！請看中文提示，並在下方拼出正確的『英文單字』！"
     st.session_state.skills_generated = False
-    st.session_state.evo_message = "" # 用於記錄進化對話框通知
+    st.session_state.evo_message = ""
 
 def save_game_st():
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
@@ -120,7 +122,6 @@ def check_level_up_st(added_exp):
         st.session_state.player_hp = st.session_state.player_max_hp
         st.session_state.pokeballs += 2 
         
-        # 🌟 ✨ 核心新功能：收服夥伴的「等級自動進化系統」
         st.session_state.evo_message = ""
         evo_rules = {
             "綠毛蟲": (10, "鐵甲蛹"),
@@ -139,7 +140,7 @@ def check_level_up_st(added_exp):
                     st.session_state.evo_message = f"✨ **奇蹟發生了！** 背包裡的【{p_name}】在達到對應修煉等級後，成功進化成了【**{target_name}**】！"
                     if st.session_state.active_partner == p_name:
                         st.session_state.active_partner = target_name
-                    break # 每次升級只觸發一隻
+                    break 
                     
         return True, st.session_state.player_level - old_lvl
     st.session_state.player_hp = st.session_state.player_max_hp
@@ -234,75 +235,149 @@ with col1:
                 if st.button("確定 (Next Turn)", use_container_width=True):
                     st.rerun()
 
-                    # === 3. 根據是否答對，計算扣血、更新日誌並觸發彈出視窗 ===
-        if matched_skill:
-            final_damage = damage_dealt
-            if st.session_state.active_partner != "無":
-                final_damage += 15
-            st.session_state.enemy_hp -= final_damage
-            st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼使出【{matched_skill}】！對 {boss['name']} 造成 {final_damage} 點傷害！"
-            show_battle_dialog(True, matched_skill, damage_dealt, boss['name'], boss['move'])
-        else:
-            if not st.session_state.is_wild_mode:
-                boss_damage = int(boss["level"] * 2.5) + 40 + random.randint(-4, 4)
+            if matched_skill:
+                final_damage = damage_dealt
+                if st.session_state.active_partner != "無":
+                    final_damage += 15
+                st.session_state.enemy_hp -= final_damage
+                st.session_state.battle_log = f"✨ 答對了！蒼炎刃鬼使出【{matched_skill}】！對 {boss['name']} 造成 {final_damage} 點傷害！"
+                show_battle_dialog(True, matched_skill, damage_dealt, boss['name'], boss['move'])
             else:
-                boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
-            st.session_state.player_hp -= boss_damage
-            st.session_state.battle_log = f"❌ 拼字錯誤！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
-            show_battle_dialog(False, "", boss_damage, boss['name'], boss['move'])
+                if not st.session_state.is_wild_mode:
+                    boss_damage = int(boss["level"] * 2.5) + 40 + random.randint(-4, 4)
+                else:
+                    boss_damage = int(boss["level"] * 1.8) + 20 + random.randint(-2, 2)
+                st.session_state.player_hp -= boss_damage
+                st.session_state.battle_log = f"❌ 拼字錯誤！Lv.{boss['level']} 的 {boss['name']} 使用了【{boss['move']}】！蒼炎刃鬼受到 {boss_damage} 點傷害！"
+                show_battle_dialog(False, "", boss_damage, boss['name'], boss['move'])
 
-        # === 4. 勝負與經驗值結算判定 ===
-        if st.session_state.enemy_hp <= 0:
-            exp = boss["exp_reward"]
-            is_up, gap = check_level_up_st(exp)
-            
-            next_stage_calculated = st.session_state.current_stage
+            # === 2. 勝負與經驗值結算判定 ===
+            if st.session_state.enemy_hp <= 0:
+                exp = boss["exp_reward"]
+                is_up, gap = check_level_up_st(exp)
+                
+                next_stage_calculated = st.session_state.current_stage
+                if not st.session_state.is_wild_mode:
+                    next_stage_calculated += 1
+                    if next_stage_calculated >= len(MAIN_STAGES):
+                        next_stage_calculated = 0
+
+                @st.dialog("🎉 戰鬥大勝利！")
+                def show_win_dialog(b_name, xp, up, lvl, next_stg):
+                    st.balloons()
+                    st.success(f"🏆 **太厲害了！你成功擊敗了 {b_name}！**")
+                    st.markdown(f"### 📈 獲得了 `{xp}` 點修行經驗值！")
+                    if up:
+                        st.warning(f"🔥 **等級突破！** 蒼炎刃鬼提升了 {lvl} 級！目前等級變為：Lv.{st.session_state.player_level}")
+                    if st.session_state.evo_message:
+                        st.info(st.session_state.evo_message)
+                        
+                    if st.button("🏆 主動迎接下一關 / 下一隻怪", use_container_width=True):
+                        if not st.session_state.is_wild_mode:
+                            st.session_state.current_stage = next_stg
+                            st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
+                            st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
+                        else:
+                            st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
+                        save_game_st()
+                        generate_round_skills()
+                        st.rerun()
+
+                save_game_st()
+                show_win_dialog(boss['name'], exp, is_up, gap, next_stage_calculated)
+                
+            elif st.session_state.player_hp <= 0:
+                @st.dialog("💀 挑戰失敗")
+                def show_lose_dialog():
+                    st.error("蒼炎刃鬼失去戰鬥能力... 自動送回喬伊小姐的醫療中心補滿血。")
+                    if st.button("重新整備出發", use_container_width=True):
+                        st.rerun()
+
+                st.session_state.player_hp = st.session_state.player_max_hp
+                if not st.session_state.is_wild_mode:
+                    st.session_state.current_stage = max(0, st.session_state.current_stage - 1)
+                    st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
+                st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
+                save_game_st()
+                generate_round_skills()
+                show_lose_dialog()
+            else:
+                generate_round_skills()
+
+    with action_col2:
+        if st.button("🔴 投擲精靈球捕捉", use_container_width=True):
             if not st.session_state.is_wild_mode:
-                next_stage_calculated += 1
-                if next_stage_calculated >= len(MAIN_STAGES):
-                    next_stage_calculated = 0
-
-            @st.dialog("🎉 戰鬥大勝利！")
-            def show_win_dialog(b_name, xp, up, lvl, next_stg):
-                st.balloons()
-                st.success(f"🏆 **太厲害了！你成功擊敗了 {b_name}！**")
-                st.markdown(f"### 📈 獲得了 `{xp}` 點修行經驗值！")
-                if up:
-                    st.warning(f"🔥 **等級突破！** 蒼炎刃鬼提升了 {lvl} 級！目前等級變為：Lv.{st.session_state.player_level}")
-                if st.session_state.evo_message:
-                    st.info(st.session_state.evo_message)
+                st.warning("⚠️ 只能在野生寶可夢捕捉區進行捕捉，故事關卡的 NPC 頭目是不能被收服的！")
+            elif st.session_state.pokeballs <= 0:
+                st.error("❌ 你的精靈球已經用完了！去野生區擊敗怪物或升級可以獲得精靈球。")
+            else:
+                boss = st.session_state.current_enemy
+                hp_ratio = st.session_state.enemy_hp / boss["hp"]
+                catch_rate = 0.85 if hp_ratio <= 0.3 else (0.45 if hp_ratio <= 0.7 else 0.15)
+                
+                weekly_words = WORD_WEEKLY_BANK.get(st.session_state.selected_week, [])
+                if weekly_words:
+                    catch_q_word, catch_q_ans = random.choice(weekly_words)
                     
-                if st.button("🏆 主動迎接下一關 / 下一隻怪", use_container_width=True):
-                    if not st.session_state.is_wild_mode:
-                        st.session_state.current_stage = next_stg
-                        st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
-                        st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
-                    else:
-                        st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
-                    save_game_st()
-                    generate_round_skills()
-                    st.rerun()
+                    @st.dialog("🔴 精靈球投擲中...")
+                    def show_catch_dialog(word, ans, rate, b_name):
+                        st.write(f"你對 **{b_name}** 投擲了精靈球！確認代號中...")
+                        st.markdown(f"### 🎯 請拼寫考核單字：【 **{ans}** 】")
+                        catch_input = st.text_input("請輸入正確英文單字:", key="catch_word_input").strip().lower()
+                        
+                        if st.button("確定封印收服", use_container_width=True):
+                            st.session_state.pokeballs -= 1
+                            if catch_input == word.lower():
+                                if random.random() <= rate:
+                                    st.balloons()
+                                    st.success(f"✨ 嗶、嗶、嗶...登登！成功收服 **{b_name}**！已放入隊伍背包。")
+                                    if b_name not in st.session_state.caught_pokemon:
+                                        st.session_state.caught_pokemon.append(b_name)
+                                    st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
+                                else:
+                                    st.error(f"💨 哎呀！{b_name} 從精靈球裡掙脫逃跑了！(捕捉機率：{int(rate*100)}%)")
+                            else:
+                                st.error(f"❌ 拼字錯誤！收服失敗。正確答案是【{word}】")
+                            save_game_st()
+                            generate_round_skills()
+                            if st.button("繼續特訓 (Next)", use_container_width=True):
+                                st.rerun()
+                    show_catch_dialog(catch_q_word, catch_q_ans, catch_rate, boss["name"])
 
-            save_game_st()
-            show_win_dialog(boss['name'], exp, is_up, gap, next_stage_calculated)
+with col2: # ==================== 右側控制面板 ====================
+    st.header("🗺️ 進度與野外特訓區")
+    
+    st.markdown(f"🎒 **玩家背包狀態**")
+    st.markdown(f"🔴 剩餘精靈球數量： `{st.session_state.pokeballs}` 顆 | 🎖️ 當前首發隊友： **{st.session_state.active_partner}**")
+    
+    with st.expander(f"📜 已收服的寶可夢圖鑑管理選單"):
+        if st.session_state.caught_pokemon:
+            st.write("點選下方你想派上場的夥伴寶可夢：")
             
-        elif st.session_state.player_hp <= 0:
-            @st.dialog("💀 挑戰失敗")
-            def show_lose_dialog():
-                st.error("蒼炎刃鬼失去戰鬥能力... 自動送回喬伊小姐的醫療中心補滿血。")
-                if st.button("重新整備出發", use_container_width=True):
+            if st.button("❌ 召回夥伴 (單獨作戰)", key="remove_partner_btn"):
+                st.session_state.active_partner = "無"
+                save_game_st()
+                st.rerun()
+                
+            for idx, p_name in enumerate(st.session_state.caught_pokemon):
+                if st.button(f"🎖️ 派遣【{p_name}】出場戰鬥", key=f"partner_{idx}"):
+                    st.session_state.active_partner = p_name
+                    save_game_st()
                     st.rerun()
-
-            st.session_state.player_hp = st.session_state.player_max_hp
-            if not st.session_state.is_wild_mode:
-                st.session_state.current_stage = max(0, st.session_state.current_stage - 1)
-                st.session_state.current_enemy = MAIN_STAGES[st.session_state.current_stage].copy()
-            st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
-            save_game_st()
-            generate_round_skills()
-            show_lose_dialog()
         else:
-            generate_round_skills()
+                                    st.success(f"✨ 嗶、嗶、嗶...登登！成功收服 **{b_name}**！已放入隊伍背包。")
+                                    if b_name not in st.session_state.caught_pokemon:
+                                        st.session_state.caught_pokemon.append(b_name)
+                                    st.session_state.enemy_hp = st.session_state.current_enemy["hp"]
+                                else:
+                                    st.error(f"💨 哎呀！{b_name} 從精靈球裡掙脫逃跑了！(捕捉機率：{int(rate*100)}%)")
+                            else:
+                                st.error(f"❌ 拼字錯誤！收服失敗。正確答案是【{word}】")
+                            save_game_st()
+                            generate_round_skills()
+                            if st.button("繼續特訓 (Next)", use_container_width=True):
+                                st.rerun()
+                    show_catch_dialog(catch_q_word, catch_q_ans, catch_rate, boss["name"])
 
 with col2: # ==================== 右側控制面板 ====================
     st.header("🗺️ 進度與野外特訓區")
